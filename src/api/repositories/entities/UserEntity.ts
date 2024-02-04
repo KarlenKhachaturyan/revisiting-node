@@ -14,7 +14,7 @@ export class UserEntity {
   @AutoMap()
   @IsNotEmpty()
   @Column({ name: 'full_name', type: 'varchar', length: 25 })
-  public firstName: string;
+  public fullName: string;
 
   @AutoMap()
   @IsEmail()

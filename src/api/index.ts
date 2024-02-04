@@ -1,10 +1,14 @@
 import 'reflect-metadata';
-import { createExpressServer } from 'routing-controllers';
+import { createExpressServer, useContainer } from 'routing-controllers';
 import config from '../config';
 import { AuthController } from './controllers/AuthController';
-
+import { Container } from 'typedi';
+import { Mapper } from '@nartc/automapper';
+import { RepositoryMapperProfile } from './repositories/mapper/RepositoryMapperProfile';
+import { ControllerMapperProfile } from './controllers/mapper/ControllerMapperProfile';
 export class API {
   static async init() {
+    useContainer(Container);
     const app = createExpressServer({
       cors: true,
       controllers: [AuthController],
@@ -17,8 +21,19 @@ export class API {
       },
     });
 
+    API.initAutoMapper();
+
     app.listen(config.port, () => {
       console.log(`Server start http://localhost:${config.port}`);
     });
+  }
+
+  static initAutoMapper() {
+    Mapper.withGlobalSettings({
+      skipUnmappedAssertion: true,
+      useUndefined: true,
+    });
+    Mapper.addProfile(RepositoryMapperProfile);
+    Mapper.addProfile(ControllerMapperProfile);
   }
 }
