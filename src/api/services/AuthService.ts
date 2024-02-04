@@ -4,9 +4,16 @@ import { User } from './models/User';
 import * as argon from 'argon2';
 import { v4 as uuidv4 } from 'uuid';
 import { UserRepository } from '../repositories/UserRepository';
-
+import { MailService } from './MailService';
+import { UserStatus } from '../enums/UserStatus';
+import { LoginBody } from '../controllers/requests/auth/LoginBody';
+import { BadRequestError } from 'routing-controllers';
+import config from '../../config';
+import { Auth } from '../services/models/Auth';
+import * as jwt from 'jsonwebtoken';
 @Service()
 export class AuthService {
+  constructor(private mailService: MailService) {}
   public async register(userData: RegisterBody): Promise<User> {
     try {
       const passwordHash = await argon.hash(userData.password);
@@ -23,6 +30,12 @@ export class AuthService {
       user.isEmailSent = false;
       const savedUser = await UserRepository.saveUser(user);
 
+      const sendMail = await this.mailService.sendMail(user.email, verificationToken, 'First email', savedUser.id);
+
+      if (sendMail) {
+        await UserRepository.update({ id: savedUser.id }, { isEmailSent: true });
+      }
+
       return savedUser;
     } catch (error: any) {
       if (error.code === '23505') {
@@ -32,7 +45,55 @@ export class AuthService {
     }
   }
 
+  async login(loginData: LoginBody): Promise<Auth> {
+    const user = await UserRepository.findByEmail(loginData.email);
+    if (!user) throw new BadRequestError('invalid credential');
+
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new BadRequestError('please confirm email');
+    }
+
+    const psMatches = await argon.verify(user.passwordHash, loginData.password);
+    if (!psMatches) throw new BadRequestError('invalid credential');
+
+    return await this.signToken(user.id, loginData.rememberMe);
+  }
+
+  public async resetPassword(email: string): Promise<void> {
+    const user = await UserRepository.findByEmail(email);
+    if (!user) throw new BadRequestError('invalid credential');
+    const emailSent = await this.mailService.sendMail(email, user.resetPasswordToken, 'Reset password', user.id);
+    if (!emailSent) {
+      throw new BadRequestError('unexpectedly error');
+    }
+  }
+
+  public async newPassword(token: string, password: string): Promise<void> {
+    const user = await UserRepository.findByResetPasswordToken(token);
+    user.passwordHash = await argon.hash(password);
+    await UserRepository.save(user);
+  }
+
+  public async confirmEmail(verificationToken: string): Promise<void> {
+    const user = await UserRepository.findByVerificationToken(verificationToken);
+    await UserRepository.update({ id: user.id }, { status: UserStatus.ACTIVE });
+  }
+
   public generateVerificationToken(): string {
     return uuidv4();
+  }
+
+  async signToken(userId: string, rememberMe?: boolean): Promise<Auth> {
+    const payload = {
+      id: userId,
+    };
+    const secret = config.JWTSecret;
+    const expiresIn = config.JWTExpireIn;
+    const expiresInLong = config.JWTExpireInLong;
+
+    const token = jwt.sign(payload, secret, { expiresIn: rememberMe ? expiresIn : expiresInLong });
+    const result = new Auth();
+    result.token = token;
+    return result;
   }
 }
