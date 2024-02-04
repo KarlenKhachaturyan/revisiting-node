@@ -1,9 +1,9 @@
 import 'reflect-metadata';
-import { Column, Entity, Index, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, Index, CreateDateColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { IsEmail, IsNotEmpty } from 'class-validator';
-import { AutoMap } from '@nartc/automapper';
 import { UserRole } from '../../enums/UserRoles';
 import { UserStatus } from '../../enums/UserStatus';
+import { AutoMap } from '@nartc/automapper';
 
 @Entity('users')
 export class UserEntity {
