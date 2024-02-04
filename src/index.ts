@@ -1,13 +1,11 @@
-import express, { Application, Request, Response } from 'express';
+import { API } from './api';
+import { TypeORM } from './db';
 
-const app: Application = express();
-
-app.get('/', (req: Request, res: Response) => {
-  res.send('Launcher worked with nodemon');
-});
-
-const port = 3220;
-
-app.listen(port, () => {
-  console.log(`Listening on port => ${port}`);
-});
+(async () => {
+  try {
+    await TypeORM.init();
+    await API.init();
+  } catch (err) {
+    console.log(err);
+  }
+})();
