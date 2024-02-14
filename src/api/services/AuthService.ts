@@ -11,6 +11,8 @@ import { BadRequestError } from 'routing-controllers';
 import config from '../../config';
 import { Auth } from '../services/models/Auth';
 import * as jwt from 'jsonwebtoken';
+import { AuthProvider } from './models/AuthProvider';
+import { AuthProviderRepository } from '../repositories/AuthProviderRepository';
 @Service()
 export class AuthService {
   constructor(private mailService: MailService) {}
@@ -83,6 +85,10 @@ export class AuthService {
     return uuidv4();
   }
 
+  async socialLogin(id: string): Promise<Auth> {
+    return await this.signToken(id);
+  }
+
   async signToken(userId: string, rememberMe?: boolean): Promise<Auth> {
     const payload = {
       id: userId,
@@ -95,5 +101,32 @@ export class AuthService {
     const result = new Auth();
     result.token = token;
     return result;
+  }
+
+  public async findOrCreateUserWithProvider(userData: User, authProviderData: AuthProvider): Promise<User> {
+    try {
+      let user = await UserRepository.findByEmail(userData.email);
+      if (!user) {
+        userData.role = 'user';
+        userData.status = UserStatus.ACTIVE;
+        user = await UserRepository.saveUser(userData);
+      }
+      const existingAuthProvider = await AuthProviderRepository.findByProviderId(authProviderData.providerId);
+
+      if (!existingAuthProvider) {
+        authProviderData.userId = user.id;
+        await AuthProviderRepository.save(authProviderData);
+      } else {
+        await AuthProviderRepository.update(
+          { id: existingAuthProvider.id },
+          { providerId: authProviderData.providerId },
+        );
+      }
+
+      return user;
+    } catch (error: any) {
+      console.error('Error in findOrCreateUser:', error);
+      throw new Error('Error creating or finding user');
+    }
   }
 }

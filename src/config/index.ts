@@ -21,6 +21,8 @@ const config = {
   JWTSecret: process.env.JWT_SECRET || 'very_secret',
   JWTExpireIn: process.env.JWT_EXPIRE_IN,
   JWTExpireInLong: process.env.JWT_EXPIRE_IN_LONG,
+  githubClientId: process.env.GITHUB_CLIENT_ID || 'github',
+  githubClientSecret: process.env.GITHUB_CLIENT_SECRET || 'github',
 };
 
 export default config;
