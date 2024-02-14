@@ -31,4 +31,9 @@ export const UserRepository = appDataSource.getRepository(UserEntity).extend({
     }
     return Mapper.map(userEntity, User);
   },
+
+  async findById(id: string): Promise<User | null> {
+    const userEntity = await this.findOneBy({ id });
+    return userEntity ? Mapper.map(userEntity, User) : null;
+  },
 });
