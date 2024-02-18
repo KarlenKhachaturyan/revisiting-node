@@ -23,6 +23,7 @@ const config = {
   JWTExpireInLong: process.env.JWT_EXPIRE_IN_LONG,
   githubClientId: process.env.GITHUB_CLIENT_ID || 'github',
   githubClientSecret: process.env.GITHUB_CLIENT_SECRET || 'github',
+  wsPort: process.env.WS_PORT ? parseInt(process.env.WS_PORT, 10) : 1990,
 };
 
 export default config;
