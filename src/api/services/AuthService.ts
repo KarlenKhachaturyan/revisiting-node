@@ -13,9 +13,17 @@ import { Auth } from '../services/models/Auth';
 import * as jwt from 'jsonwebtoken';
 import { AuthProvider } from './models/AuthProvider';
 import { AuthProviderRepository } from '../repositories/AuthProviderRepository';
+import { UserService } from './UserService';
+interface JWTPayload {
+  id: string;
+}
+
 @Service()
 export class AuthService {
-  constructor(private mailService: MailService) {}
+  constructor(
+    private mailService: MailService,
+    private userService: UserService,
+  ) {}
   public async register(userData: RegisterBody): Promise<User> {
     try {
       const passwordHash = await argon.hash(userData.password);
@@ -101,6 +109,25 @@ export class AuthService {
     const result = new Auth();
     result.token = token;
     return result;
+  }
+
+  public async checkToken(token: string, roles?: string[]): Promise<string> {
+    try {
+      const payload = jwt.verify(token, config.JWTSecret) as JWTPayload;
+      const user = await this.userService.getUser(payload.id);
+      if (!user) {
+        throw new BadRequestError('Invalid credentials');
+      }
+
+      if (roles && !roles.includes(user.role)) {
+        throw new BadRequestError('Access denied');
+      }
+
+      return user.id;
+    } catch (e) {
+      console.error(e);
+      throw new BadRequestError('Unexpected error');
+    }
   }
 
   public async findOrCreateUserWithProvider(userData: User, authProviderData: AuthProvider): Promise<User> {

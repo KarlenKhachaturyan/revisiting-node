@@ -1,8 +1,8 @@
-import { Server as WebSocketServer, WebSocket, RawData } from 'ws'; // Correct import for WebSocket type
+import { Server as WebSocketServer, WebSocket, RawData } from 'ws';
 import { Service } from 'typedi';
-import config from '../config'; // Ensure this path is correct
-import { UserManager } from './UserManager'; // Ensure this path is correct and the class name matches the file name
-import { RequestsManager } from './RequestsManager';
+import config from '../config';
+import { UserManager } from './UserManager';
+import { RequestsManager } from './RequestManager';
 
 @Service()
 export class WebSocketService {

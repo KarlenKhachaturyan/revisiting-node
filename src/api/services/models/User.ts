@@ -29,6 +29,9 @@ export class User {
   resetPasswordToken: string;
 
   @AutoMap()
+  isOnline: boolean;
+
+  @AutoMap()
   public createdAt: Date;
 
   @AutoMap()
